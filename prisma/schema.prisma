@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ตารางสำหรับเก็บข้อมูลที่นั่งทั้งหมด
+model Seat {
+  id    Int    @id @default(autoincrement())
+  row   Int
+  col   Int
+  label String // เช่น "A1", "A2"
+
+  bookings Booking[] // ความสัมพันธ์: 1 ที่นั่งมีการจองได้หลายครั้ง
+}
+
+// ตารางสำหรับเก็บข้อมูลการจอง
+model Booking {
+  id        Int      @id @default(autoincrement())
+  seatId    Int
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  userName  String // อาจจะเป็น userId ในอนาคต
+
+  seat Seat @relation(fields: [seatId], references: [id])
+
+  @@index([seatId, startDate, endDate]) // เพิ่ม index เพื่อความเร็วในการค้นหา
+}

@@ -1,103 +1,110 @@
-import Image from "next/image";
+// app/page.tsx
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { FaChair } from 'react-icons/fa'; // ติดตั้ง `react-icons` -> npm install react-icons
+
+// สร้าง Type เพื่อความชัดเจน
+type Seat = {
+  id: number;
+  row: number;
+  col: number;
+  label: string;
+};
+
+type Booking = {
+  id: number;
+  seatId: number;
+  startDate: string;
+  endDate: string;
+};
+
+export default function HomePage() {
+  const [seats, setSeats] = useState<Seat[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); // State สำหรับมุมมอง
+
+  // Fetch ข้อมูลที่นั่งและการจอง
+  useEffect(() => {
+    async function fetchData() {
+      // Fetch seats
+      const seatsRes = await fetch('/api/seats');
+      const seatsData = await seatsRes.json();
+      setSeats(seatsData);
+
+      // Fetch bookings for the selected date
+      const dateString = selectedDate.toISOString().split('T')[0];
+      const bookingsRes = await fetch(`/api/bookings?date=${dateString}`);
+      const bookingsData = await bookingsRes.json();
+      setBookings(bookingsData);
+    }
+    fetchData();
+  }, [selectedDate]);
+
+  const maxCols = Math.max(...seats.map((s) => s.col), 0);
+  const bookedSeatIds = new Set(bookings.map((b) => b.seatId));
+
+  const handleBooking = (seatId: number) => {
+    // TODO: เปิด Dialog/Modal เพื่อให้ผู้ใช้กรอกข้อมูลการจอง (ชื่อ, เลือกวันเริ่ม-สิ้นสุด)
+    alert(`You clicked seat ID: ${seatId}. Implement booking modal here.`);
+  };
+  
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6 text-center">Seat Booking System</h1>
+      
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* ส่วนแสดงที่นั่ง */}
+        <Card className="flex-grow">
+          <CardHeader>
+            <CardTitle>Select a Seat for {selectedDate.toLocaleDateString()}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div
+              className="grid gap-4"
+              style={{ gridTemplateColumns: `repeat(${maxCols}, minmax(0, 1fr))` }}
+            >
+              {seats.map((seat) => {
+                const isBooked = bookedSeatIds.has(seat.id);
+                return (
+                  <Button
+                    key={seat.id}
+                    variant="outline"
+                    className={`h-20 flex flex-col items-center justify-center ${
+                      isBooked ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'
+                    }`}
+                    onClick={() => !isBooked && handleBooking(seat.id)}
+                    disabled={isBooked}
+                  >
+                    <FaChair size={24} />
+                    <span className="mt-1 text-sm font-semibold">{seat.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* ส่วนปฏิทินและเลือกมุมมอง */}
+        <div className="w-full md:w-auto">
+          {/* TODO: เพิ่มปุ่มสำหรับเลือกมุมมอง Week/Month */}
+          <Card>
+              <CardHeader><CardTitle>Select Date</CardTitle></CardHeader>
+              <CardContent>
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    className="rounded-md border"
+                  />
+              </CardContent>
+          </Card>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }
