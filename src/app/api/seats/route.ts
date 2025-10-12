@@ -1,4 +1,5 @@
-// app/api/seats/route.ts
+// CORRECT FILE: app/api/seats/route.ts
+
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -16,7 +17,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const { rows, cols } = await request.json();
 
-  // ลบที่นั่งเก่าทั้งหมด
+  // ลบที่นั่งเก่าทั้งหมด (ควรลบ booking ที่เกี่ยวข้องด้วยในแอปจริง)
+  await prisma.booking.deleteMany({});
   await prisma.seat.deleteMany({});
 
   const seatsToCreate = [];
