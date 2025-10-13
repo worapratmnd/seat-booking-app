@@ -22,13 +22,12 @@ model Seat {
 
 // ตารางสำหรับเก็บข้อมูลการจอง
 model Booking {
-  id        Int      @id @default(autoincrement())
-  seatId    Int
-  startDate DateTime @db.Date
-  endDate   DateTime @db.Date
-  userName  String // อาจจะเป็น userId ในอนาคต
+  id       Int      @id @default(autoincrement())
+  seatId   Int
+  date     DateTime @db.Date
+  userName String // อาจจะเป็น userId ในอนาคต
 
   seat Seat @relation(fields: [seatId], references: [id])
 
-  @@index([seatId, startDate, endDate]) // เพิ่ม index เพื่อความเร็วในการค้นหา
+  @@index([seatId, date]) // เพิ่ม index เพื่อความเร็วในการค้นหา
 }

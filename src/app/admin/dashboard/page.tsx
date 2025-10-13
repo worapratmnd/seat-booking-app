@@ -12,7 +12,7 @@ import { subDays } from 'date-fns';
 
 // ควรสร้าง Type นี้ไว้ในไฟล์กลางแล้ว import มาใช้
 type Seat = { id: number; label: string; };
-type Booking = { id: number; userName: string; startDate: string; endDate: string; seat: Seat; };
+type Booking = { id: number; userName: string; date: string; seat: Seat; };
 
 export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -27,7 +27,7 @@ export default function DashboardPage() {
       const endDate = dateRange.to.toISOString();
       fetch(`/api/bookings?startDate=${startDate}&endDate=${endDate}`)
         .then(res => res.json())
-        .then(data => setBookings(data));
+  .then(data => setBookings(data));
     }
   }, [dateRange]);
 
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     setBookings(bookings.filter(b => b.id !== bookingId));
   };
 
-  // TODO: Implement Edit functionality with a Dialog
+  // Placeholder for future edit dialog implementation
   const handleEdit = (booking: Booking) => {
       alert(`Editing booking for ${booking.userName}. Implement Edit Dialog here.`);
   }
@@ -71,8 +71,7 @@ export default function DashboardPage() {
               <TableRow>
                 <TableHead>Seat</TableHead>
                 <TableHead>User Name</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>End Date</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -81,8 +80,7 @@ export default function DashboardPage() {
                 <TableRow key={booking.id}>
                   <TableCell>{booking?.seat?.label}</TableCell>
                   <TableCell>{booking.userName}</TableCell>
-                  <TableCell>{new Date(booking.startDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(booking.endDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(booking.date).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(booking)} className="mr-2">Edit</Button>
                     <AlertDialog>

@@ -11,17 +11,23 @@ export async function PUT(
 ) {
   try {
     const id = parseInt(params.id);
-    const { userName, startDate, endDate } = await request.json();
+    const { userName, date } = await request.json(); // รับแค่ userName และ date
+    
+    if (!userName && !date) {
+        return NextResponse.json({ error: 'userName or date is required for update' }, { status: 400 });
+    }
+
+    const dataToUpdate: { userName?: string; date?: Date } = {};
+    if (userName) dataToUpdate.userName = userName;
+    if (date) dataToUpdate.date = new Date(date);
+
     const updatedBooking = await prisma.booking.update({
       where: { id },
-      data: {
-        userName,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-      },
+      data: dataToUpdate,
     });
     return NextResponse.json(updatedBooking);
   } catch (error) {
+    console.error("Failed to update booking:", error);
     return NextResponse.json({ error: 'Failed to update booking' }, { status: 500 });
   }
 }
@@ -38,6 +44,7 @@ export async function DELETE(
     });
     return NextResponse.json({ message: 'Booking deleted successfully' });
   } catch (error) {
+    console.error("Failed to delete booking:", error);
     return NextResponse.json({ error: 'Failed to delete booking' }, { status: 500 });
   }
 }

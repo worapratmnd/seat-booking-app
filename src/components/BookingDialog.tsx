@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { DateRange } from 'react-day-picker';
-import { addDays } from 'date-fns';
+
 
 // สร้าง Type สำหรับ Props ที่จะรับเข้ามา
 type Seat = {
@@ -23,17 +22,14 @@ interface BookingDialogProps {
   onBookingSuccess: () => void;
 }
 
-export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: BookingDialogProps) {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(),
-    to: addDays(new Date(), 1), // Default จอง 1 วัน
-  });
+export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Readonly<BookingDialogProps>) {
+  const [date, setDate] = useState<Date>(new Date());
   const [userName, setUserName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleConfirmBooking = async () => {
-    if (!seat || !dateRange?.from || !userName) {
+    if (!seat || !date || !userName) {
       setError('Please fill in all fields and select a date.');
       return;
     }
@@ -47,9 +43,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Bo
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           seatId: seat.id,
-          startDate: dateRange.from.toISOString(),
-          // ถ้าไม่มี endDate ให้ใช้ startDate แทน (จองวันเดียว)
-          endDate: (dateRange.to ?? dateRange.from).toISOString(), 
+          date: date.toISOString(),
           userName: userName,
         }),
       });
@@ -78,7 +72,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Bo
     if (!isOpen) {
         setUserName('');
         setError('');
-        setDateRange({ from: new Date(), to: addDays(new Date(), 1) });
+        setDate(new Date());
     }
     onOpenChange(isOpen);
   }
@@ -91,7 +85,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Bo
         <DialogHeader>
           <DialogTitle>Book Seat {seat.label}</DialogTitle>
           <DialogDescription>
-            Select the date range and enter your name to confirm the booking.
+            Select the date and enter your name to confirm the booking.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -107,13 +101,11 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Bo
             />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Label>Booking Dates</Label>
+            <Label>Date</Label>
             <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={dateRange?.from}
-              selected={dateRange}
-              onSelect={setDateRange}
+              mode="single"
+              selected={date}
+              onSelect={(d) => d && setDate(d)}
               numberOfMonths={1}
             />
           </div>

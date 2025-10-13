@@ -7,6 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { FaChair } from "react-icons/fa";
 import { BookingDialog } from "@/components/BookingDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { EditSeatDialog } from "@/components/EditSeatDialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Seat = {
   id: number;
@@ -19,8 +37,7 @@ type Booking = {
   id: number;
   seatId: number;
   userName: string;
-  startDate: string;
-  endDate: string;
+  date: string;
   seat: Seat;
 };
 
@@ -30,6 +47,9 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditSeatDialogOpen, setIsEditSeatDialogOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -38,7 +58,7 @@ export default function HomePage() {
       setSeats(seatsData);
 
       const dateString = selectedDate.toISOString().split("T")[0];
-      const bookingsRes = await fetch(`/api/bookings?date=${dateString}`);
+  const bookingsRes = await fetch(`/api/bookings?date=${dateString}`);
       const bookingsData = await bookingsRes.json();
       setBookings(bookingsData);
     } catch (error) {
@@ -59,15 +79,52 @@ export default function HomePage() {
   };
 
   const handleBookingSuccess = () => {
-    alert("Booking successful!");
+    toast.success("Booking successful!", {
+      description: `Your seat has been booked.`,
+    });
     fetchData();
   };
-  
-  // ✅ FIX 1: เพิ่มการตรวจสอบ Array.isArray() ก่อนใช้ .map
-  const maxCols = Math.max(
-    ...(Array.isArray(seats) ? seats.map((s) => s.col) : []),
-    0
-  );
+
+  const handleSeatUpdate = () => {
+    toast.success("Seat updated successfully!");
+    fetchData();
+  };
+
+  const handleDeleteBooking = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      const res = await fetch(`/api/bookings/${selectedBooking.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete booking.");
+      }
+
+      toast.success("Booking deleted successfully!");
+      fetchData();
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred.";
+      toast.error("Failed to delete booking", { description: errorMessage });
+    } finally {
+      setIsDeleteConfirmOpen(false);
+      setSelectedBooking(null);
+    }
+  };
+
+  const openDeleteConfirm = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const openEditSeatDialog = (seat: Seat) => {
+    setSelectedSeat(seat);
+    setIsEditSeatDialogOpen(true);
+  };
+
+  const maxCols = Math.max(...(seats.map((s) => s.col) || [0]), 0);
 
   const bookingsMap = new Map(
     Array.isArray(bookings) ? bookings.map((b) => [b.seatId, b]) : []
@@ -102,29 +159,53 @@ export default function HomePage() {
                 {Array.isArray(seats) && seats.map((seat) => {
                   const booking = bookingsMap.get(seat.id);
                   const isBooked = !!booking;
-                  return (
+
+                  const seatButton = (
                     <Button
-                      key={seat.id}
                       variant="outline"
-                      className={`h-24 flex flex-col items-center justify-center p-2 text-center ${
+                      className={`h-20 flex flex-col items-center justify-center p-2 text-center transition-colors ${
                         isBooked
-                          ? "bg-red-500 text-white hover:bg-red-600 cursor-not-allowed"
+                          ? "bg-red-500 text-white hover:bg-red-600"
                           : "bg-green-500 text-white hover:bg-green-600"
                       }`}
                       onClick={() => !isBooked && handleSeatClick(seat)}
-                      disabled={isBooked}
                     >
                       <FaChair size={24} />
                       <span className="mt-1 text-sm font-semibold">
                         {seat.label}
                       </span>
-                      {isBooked && (
-                        <span className="mt-1 text-xs truncate w-full">
-                          {booking.userName}
-                        </span>
-                      )}
                     </Button>
                   );
+
+                  if (isBooked) {
+                    return (
+                      <Popover key={seat.id}>
+                        <PopoverTrigger asChild>{seatButton}</PopoverTrigger>
+                        <PopoverContent className="w-auto p-2">
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="ghost"
+                              className="justify-start"
+                              onClick={() => openEditSeatDialog(seat)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Seat
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="justify-start text-red-500 hover:text-red-600"
+                              onClick={() => openDeleteConfirm(booking)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Booking
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    );
+                  }
+
+                  return seatButton;
                 })}
               </div>
             )}
@@ -154,6 +235,36 @@ export default function HomePage() {
         onOpenChange={setIsDialogOpen}
         onBookingSuccess={handleBookingSuccess}
       />
+
+      <EditSeatDialog
+        seat={selectedSeat}
+        open={isEditSeatDialogOpen}
+        onOpenChange={setIsEditSeatDialogOpen}
+        onSeatUpdate={handleSeatUpdate}
+      />
+
+      <AlertDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will permanently delete the booking for seat{" "}
+              <strong>{selectedBooking?.seat?.label}</strong> on {" "}
+              <strong>{selectedBooking && new Date(selectedBooking.date).toLocaleDateString()}</strong> by{" "}
+              <strong>{selectedBooking?.userName}</strong>. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBooking}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
