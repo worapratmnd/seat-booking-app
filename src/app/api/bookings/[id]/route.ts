@@ -1,16 +1,14 @@
 // app/api/bookings/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // API สำหรับแก้ไขข้อมูลการจอง
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const resolved = 'then' in context.params ? await context.params : context.params;
+    const id = parseInt(resolved.id);
     const { userName, date } = await request.json(); // รับแค่ userName และ date
     
     if (!userName && !date) {
@@ -49,12 +47,10 @@ export async function PUT(
 }
 
 // API สำหรับลบข้อมูลการจอง
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> | { id: string } }) {
   try {
-    const id = parseInt(params.id);
+    const resolved = 'then' in context.params ? await context.params : context.params;
+    const id = parseInt(resolved.id);
     await prisma.booking.delete({
       where: { id },
     });
