@@ -106,6 +106,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Re
               mode="single"
               selected={date}
               onSelect={(d) => d && setDate(d)}
+              disabled={(day) => day < new Date(new Date().setHours(0,0,0,0))}
               numberOfMonths={1}
             />
           </div>

@@ -222,6 +222,7 @@ export default function HomePage() {
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
+                disabled={(day) => day < new Date(new Date().setHours(0,0,0,0))}
                 className="rounded-md border"
               />
             </CardContent>

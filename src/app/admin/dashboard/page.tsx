@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { subDays } from 'date-fns';
+import { EditBookingDialog } from '@/components/EditBookingDialog';
 
 // ควรสร้าง Type นี้ไว้ในไฟล์กลางแล้ว import มาใช้
 type Seat = { id: number; label: string; };
@@ -31,18 +32,26 @@ export default function DashboardPage() {
     }
   }, [dateRange]);
 
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+
   const handleDelete = async (bookingId: number) => {
     await fetch(`/api/bookings/${bookingId}`, { method: 'DELETE' });
     // Refresh data
     setBookings(bookings.filter(b => b.id !== bookingId));
   };
 
-  // Placeholder for future edit dialog implementation
   const handleEdit = (booking: Booking) => {
-      alert(`Editing booking for ${booking.userName}. Implement Edit Dialog here.`);
+    setEditingBooking(booking);
+    setIsEditOpen(true);
+  }
+
+  const handleUpdated = (updated: Booking) => {
+    setBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
   }
 
   return (
+    <>
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
@@ -108,5 +117,12 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
     </div>
+    <EditBookingDialog
+      booking={editingBooking}
+      open={isEditOpen}
+      onOpenChange={setIsEditOpen}
+      onUpdated={handleUpdated}
+    />
+    </>
   );
 }

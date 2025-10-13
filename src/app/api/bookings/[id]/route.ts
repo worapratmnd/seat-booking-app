@@ -19,7 +19,23 @@ export async function PUT(
 
     const dataToUpdate: { userName?: string; date?: Date } = {};
     if (userName) dataToUpdate.userName = userName;
-    if (date) dataToUpdate.date = new Date(date);
+    if (date) {
+      const newDate = new Date(date);
+      if (isNaN(newDate.getTime())) {
+        return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
+      }
+      // Find existing booking to know seatId
+      const existing = await prisma.booking.findUnique({ where: { id } });
+      if (!existing) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      // Check conflict (exclude itself)
+      const conflict = await prisma.booking.findFirst({
+        where: { seatId: existing.seatId, date: newDate, NOT: { id } },
+      });
+      if (conflict) {
+        return NextResponse.json({ error: 'This seat is already booked for that date.' }, { status: 409 });
+      }
+      dataToUpdate.date = newDate;
+    }
 
     const updatedBooking = await prisma.booking.update({
       where: { id },

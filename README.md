@@ -1,6 +1,6 @@
 # **Seat Booking System \- ระบบจองที่นั่งอเนกประสงค์**
 
-ระบบจองที่นั่งแบบ Full-Stack ที่สร้างขึ้นด้วย Next.js และ PostgreSQL ออกแบบมาให้ใช้งานง่าย, ยืดหยุ่น, และง่ายต่อการพัฒนาต่อยอด ผู้ใช้สามารถดูสถานะที่นั่งและทำการจองได้ตามช่วงวันที่ต้องการ ในขณะที่ผู้ดูแลระบบสามารถปรับแต่ง Layout ของที่นั่งและดูรายงานสรุปการจองทั้งหมดได้
+ระบบจองที่นั่งแบบ Full-Stack ที่สร้างขึ้นด้วย Next.js และ PostgreSQL ออกแบบมาให้ใช้งานง่าย, ยืดหยุ่น, และง่ายต่อการพัฒนาต่อยอด ผู้ใช้สามารถเลือกวันที่ต้องการแล้วทำการจองได้ (ปัจจุบันรองรับการจอง “วันเดียวต่อหนึ่งรายการ”) ในขณะที่ผู้ดูแลระบบสามารถปรับแต่ง Layout ของที่นั่งและดูรายงานสรุปการจอง (แบบช่วงวันที่สำหรับการออกรายงานเท่านั้น) ได้
 
 ## **✨ Features (คุณสมบัติหลัก)**
 
@@ -8,7 +8,7 @@
 
 * **Visual Seat Map:** แสดงแผนผังที่นั่งแบบ Real-time พร้อมสถานะสีที่ชัดเจน (เขียว \= ว่าง, แดง \= ไม่ว่าง)  
 * **Date-Based Viewing:** สามารถเลือกดูสถานะที่นั่งว่างในวันที่ต้องการผ่านปฏิทิน  
-* **Flexible Booking:** รองรับการจองได้ทั้งแบบรายวัน, รายสัปดาห์, หรือรายเดือนผ่านหน้าต่างการจอง (Booking Dialog)  
+* **Single-Day Booking:** เลือกวันและจองได้หนึ่งวันที่ต่อหนึ่งรายการ (อนาคตสามารถขยายให้รองรับช่วงวันได้)  
 * **User Information on Seat:** แสดงชื่อของผู้ที่จองที่นั่งนั้นๆ เพื่อให้ง่ายต่อการระบุตัวตน
 
 ### **สำหรับผู้ดูแลระบบ (Admin-Facing)**
@@ -77,15 +77,13 @@ model Seat {
 }
 
 model Booking {  
-  id        Int      @id @default(autoincrement())  
-  seatId    Int  
-  startDate DateTime @db.Date  
-  endDate   DateTime @db.Date  
-  userName  String
+  id       Int      @id @default(autoincrement())  
+  seatId   Int  
+  date     DateTime @db.Date  
+  userName String
 
-  seat Seat @relation(fields: \[seatId\], references: \[id\])
-
-  @@index(\[seatId, startDate, endDate\])  
+  seat Seat @relation(fields: [seatId], references: [id])  
+  @@index([seatId, date])  
 }
 
 ## **Endpoints (API)**
