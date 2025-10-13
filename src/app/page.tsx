@@ -44,7 +44,11 @@ type Booking = {
 export default function HomePage() {
   const [seats, setSeats] = useState<Seat[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditSeatDialogOpen, setIsEditSeatDialogOpen] = useState(false);
@@ -188,6 +192,7 @@ export default function HomePage() {
                   const freeBg = "bg-gradient-to-br from-emerald-500 via-emerald-500/90 to-emerald-600";
                   const seatButton = (
                     <Button
+                      key={`seat_button_${seat.id}`}
                       variant="outline"
                       aria-label={isBooked ? `Seat ${seat.label} booked by ${booking.userName}` : `Seat ${seat.label} available`}
                       className={`group relative h-24 flex flex-col items-center justify-between py-1.5 px-1.5 text-center transition-all rounded-xl shadow-sm hover:shadow-md border-none ${
@@ -255,7 +260,7 @@ export default function HomePage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="justify-start h-8 text-red-200 hover:text-red-100 hover:bg-red-600/30"
+                                className="justify-start h-8 text-red-600 hover:text-red-100 hover:bg-red-600"
                                 onClick={() => openDeleteConfirm(booking)}
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
