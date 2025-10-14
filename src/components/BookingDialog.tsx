@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatDateForApi } from '@/lib/timezone';
 
 
 // สร้าง Type สำหรับ Props ที่จะรับเข้ามา
@@ -43,7 +44,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Re
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           seatId: seat.id,
-          date: date.toISOString(),
+          date: formatDateForApi(date),
           userName: userName,
         }),
       });

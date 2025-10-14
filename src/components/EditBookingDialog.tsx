@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
+import { formatDateForApi } from '@/lib/timezone';
 
 type Seat = { id: number; label: string };
 export interface Booking {
@@ -52,7 +53,7 @@ export function EditBookingDialog({ booking, open, onOpenChange, onUpdated }: Re
       const res = await fetch(`/api/bookings/${booking.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName, date: date.toISOString() }),
+        body: JSON.stringify({ userName, date: formatDateForApi(date) }),
       });
       if (res.status === 409) {
         const body = await res.json();

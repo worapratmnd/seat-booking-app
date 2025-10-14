@@ -1,6 +1,7 @@
 // app/api/bookings/[id]/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { parseDateToUtcFromTimeZone } from '@/lib/timezone';
 
 const prisma = new PrismaClient();
 
@@ -18,8 +19,10 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const dataToUpdate: { userName?: string; date?: Date } = {};
     if (userName) dataToUpdate.userName = userName;
     if (date) {
-      const newDate = new Date(date);
-      if (isNaN(newDate.getTime())) {
+      let newDate: Date;
+      try {
+        newDate = parseDateToUtcFromTimeZone(date);
+      } catch (error) {
         return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
       }
       // Find existing booking to know seatId
