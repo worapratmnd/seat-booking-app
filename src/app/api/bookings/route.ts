@@ -1,6 +1,7 @@
 // app/api/bookings/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
+import { parseDateToUtcFromTimeZone } from "@/lib/timezone";
 
 const prisma = new PrismaClient();
 
@@ -16,8 +17,10 @@ export async function GET(request: Request) {
 
   try {
     if (date) {
-      const targetDate = new Date(date);
-      if (isNaN(targetDate.getTime())) {
+      let targetDate: Date;
+      try {
+        targetDate = parseDateToUtcFromTimeZone(date);
+      } catch (error) {
         return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
       }
       const bookings = await prisma.booking.findMany({
@@ -28,9 +31,12 @@ export async function GET(request: Request) {
     }
 
     if (startDateParam && endDateParam) {
-      const startDate = new Date(startDateParam);
-      const endDate = new Date(endDateParam);
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      let startDate: Date;
+      let endDate: Date;
+      try {
+        startDate = parseDateToUtcFromTimeZone(startDateParam);
+        endDate = parseDateToUtcFromTimeZone(endDateParam);
+      } catch (error) {
         return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
       }
       const bookings = await prisma.booking.findMany({
@@ -68,8 +74,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const targetDate = new Date(date);
-     if (isNaN(targetDate.getTime())) {
+    let targetDate: Date;
+    try {
+      targetDate = parseDateToUtcFromTimeZone(date);
+    } catch (error) {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 

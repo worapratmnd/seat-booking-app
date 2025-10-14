@@ -10,6 +10,7 @@ import { DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { subDays } from 'date-fns';
 import { EditBookingDialog } from '@/components/EditBookingDialog';
+import { formatDateForApi, formatDateForDisplay } from '@/lib/timezone';
 
 // ควรสร้าง Type นี้ไว้ในไฟล์กลางแล้ว import มาใช้
 type Seat = { id: number; label: string; };
@@ -24,11 +25,11 @@ export default function DashboardPage() {
   
   useEffect(() => {
     if (dateRange?.from && dateRange?.to) {
-      const startDate = dateRange.from.toISOString();
-      const endDate = dateRange.to.toISOString();
+      const startDate = formatDateForApi(dateRange.from);
+      const endDate = formatDateForApi(dateRange.to);
       fetch(`/api/bookings?startDate=${startDate}&endDate=${endDate}`)
-        .then(res => res.json())
-  .then(data => setBookings(data));
+        .then((res) => res.json())
+        .then((data) => setBookings(data));
     }
   }, [dateRange]);
 
@@ -89,7 +90,7 @@ export default function DashboardPage() {
                 <TableRow key={booking.id}>
                   <TableCell>{booking?.seat?.label}</TableCell>
                   <TableCell>{booking.userName}</TableCell>
-                  <TableCell>{new Date(booking.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDateForDisplay(booking.date)}</TableCell>
                   <TableCell>
                     <Button variant="outline" size="sm" onClick={() => handleEdit(booking)} className="mr-2">Edit</Button>
                     <AlertDialog>

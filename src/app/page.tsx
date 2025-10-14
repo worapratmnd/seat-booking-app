@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/popover";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateForApi, formatDateForDisplay } from "@/lib/timezone";
 
 type Seat = {
   id: number;
@@ -65,7 +66,7 @@ export default function HomePage() {
       const seatsData = await seatsRes.json();
       setSeats(seatsData);
 
-      const dateString = selectedDate.toISOString().split("T")[0];
+      const dateString = formatDateForApi(selectedDate);
       const bookingsRes = await fetch(`/api/bookings?date=${dateString}`);
       const bookingsData = await bookingsRes.json();
       setBookings(bookingsData);
@@ -153,7 +154,7 @@ export default function HomePage() {
         <Card className="flex-grow">
           <CardHeader>
             <CardTitle>
-              Select a Seat for {selectedDate.toLocaleDateString()}
+              Select a Seat for {formatDateForDisplay(selectedDate)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -323,7 +324,7 @@ export default function HomePage() {
             <AlertDialogDescription>
               This action will permanently delete the booking for seat{" "}
               <strong>{selectedBooking?.seat?.label}</strong> on {" "}
-              <strong>{selectedBooking && new Date(selectedBooking.date).toLocaleDateString()}</strong> by{" "}
+              <strong>{selectedBooking && formatDateForDisplay(selectedBooking.date)}</strong> by{" "}
               <strong>{selectedBooking?.userName}</strong>. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
