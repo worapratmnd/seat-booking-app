@@ -90,7 +90,7 @@ export default function HomePage() {
   };
 
   const handleBookingSuccess = () => {
-    toast.success("Booking successful!", {
+    toast.success("Booking successful! 😁", {
       description: `Your seat has been booked.`,
     });
     fetchData();
