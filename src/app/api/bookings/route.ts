@@ -1,7 +1,7 @@
 // app/api/bookings/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { parseDateToUtcFromTimeZone } from "@/lib/timezone";
+import { formatDateForApi, parseDateToUtcFromTimeZone } from "@/lib/timezone";
 
 const prisma = new PrismaClient();
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       let targetDate: Date;
       try {
         targetDate = parseDateToUtcFromTimeZone(date);
-      } catch (error) {
+      } catch {
         return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
       }
       const bookings = await prisma.booking.findMany({
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       try {
         startDate = parseDateToUtcFromTimeZone(startDateParam);
         endDate = parseDateToUtcFromTimeZone(endDateParam);
-      } catch (error) {
+      } catch {
         return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
       }
       const bookings = await prisma.booking.findMany({
@@ -65,11 +65,95 @@ export async function GET(request: Request) {
 // API สำหรับสร้างการจองใหม่
 export async function POST(request: Request) {
   try {
-    const { seatId, date, userName } = await request.json();
+    const { seatId, date, userName, startDate, endDate } = await request.json();
 
-    if (!seatId || !date || !userName) {
+    if (!seatId || !userName) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Handle multi-day booking when startDate & endDate are provided
+    if (startDate || endDate) {
+      if (!startDate || !endDate) {
+        return NextResponse.json(
+          { error: "Both startDate and endDate are required for range bookings." },
+          { status: 400 }
+        );
+      }
+
+      let rangeStart: Date;
+      let rangeEnd: Date;
+      try {
+        rangeStart = parseDateToUtcFromTimeZone(startDate);
+        rangeEnd = parseDateToUtcFromTimeZone(endDate);
+      } catch {
+        return NextResponse.json({ error: "Invalid date range" }, { status: 400 });
+      }
+
+      if (rangeEnd < rangeStart) {
+        return NextResponse.json(
+          { error: "The end date cannot be earlier than the start date." },
+          { status: 400 }
+        );
+      }
+
+      const conflicts = await prisma.booking.findMany({
+        where: {
+          seatId,
+          date: {
+            gte: rangeStart,
+            lte: rangeEnd,
+          },
+        },
+        orderBy: { date: "asc" },
+      });
+
+      if (conflicts.length > 0) {
+        const firstConflict = conflicts[0];
+        return NextResponse.json(
+          {
+            error: `Seat already booked for ${formatDateForApi(firstConflict.date)}.`,
+            conflicts,
+          },
+          { status: 409 }
+        );
+      }
+
+      const bookingDates: Date[] = [];
+      for (
+        let cursor = new Date(rangeStart);
+        cursor.getTime() <= rangeEnd.getTime();
+        cursor.setUTCDate(cursor.getUTCDate() + 1)
+      ) {
+        bookingDates.push(new Date(cursor));
+      }
+
+      const createdBookings = await prisma.$transaction(
+        bookingDates.map((bookingDate) =>
+          prisma.booking.create({
+            data: {
+              seatId,
+              userName,
+              date: bookingDate,
+            },
+          })
+        )
+      );
+
+      return NextResponse.json(
+        {
+          bookings: createdBookings,
+          count: createdBookings.length,
+        },
+        { status: 201 }
+      );
+    }
+
+    if (!date) {
+      return NextResponse.json(
+        { error: "Date is required when no range is specified." },
         { status: 400 }
       );
     }
@@ -77,7 +161,7 @@ export async function POST(request: Request) {
     let targetDate: Date;
     try {
       targetDate = parseDateToUtcFromTimeZone(date);
-    } catch (error) {
+    } catch {
       return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
     }
 

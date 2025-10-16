@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       let newDate: Date;
       try {
         newDate = parseDateToUtcFromTimeZone(date);
-      } catch (error) {
+      } catch {
         return NextResponse.json({ error: 'Invalid date format' }, { status: 400 });
       }
       // Find existing booking to know seatId

@@ -1,13 +1,14 @@
 // components/BookingDialog.tsx
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateForApi } from '@/lib/timezone';
+import type { DateRange } from 'react-day-picker';
 
 
 // สร้าง Type สำหรับ Props ที่จะรับเข้ามา
@@ -21,32 +22,66 @@ interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onBookingSuccess: () => void;
+  initialDate?: Date;
 }
 
-export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Readonly<BookingDialogProps>) {
-  const [date, setDate] = useState<Date>(new Date());
+export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess, initialDate }: Readonly<BookingDialogProps>) {
+  const createDefaultRange = useCallback((): DateRange => {
+    const base = initialDate ? new Date(initialDate) : new Date();
+    base.setHours(0, 0, 0, 0);
+    const end = new Date(base);
+    return { from: base, to: end };
+  }, [initialDate]);
+
+  const [dateRange, setDateRange] = useState<DateRange>(() => createDefaultRange());
   const [userName, setUserName] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (open) {
+      setDateRange(createDefaultRange());
+    }
+  }, [open, createDefaultRange]);
+
+  const dayCount = useMemo(() => {
+    const { from, to } = dateRange;
+    if (!from) return 0;
+    const end = to ?? from;
+    const diff = Math.floor((end.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+    return diff + 1;
+  }, [dateRange]);
+
   const handleConfirmBooking = async () => {
-    if (!seat || !date || !userName) {
-      setError('Please fill in all fields and select a date.');
+    const { from, to } = dateRange;
+    if (!seat || !from || !userName) {
+      setError('Please fill in all fields and select at least one date.');
       return;
     }
+
+    const endDate = to ?? from;
+    const isRange = endDate.getTime() !== from.getTime();
     
     setIsSubmitting(true);
     setError('');
 
     try {
+      const payload: Record<string, unknown> = {
+        seatId: seat.id,
+        userName: userName,
+      };
+
+      if (isRange) {
+        payload.startDate = formatDateForApi(from);
+        payload.endDate = formatDateForApi(endDate);
+      } else {
+        payload.date = formatDateForApi(from);
+      }
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          seatId: seat.id,
-          date: formatDateForApi(date),
-          userName: userName,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -73,7 +108,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Re
     if (!isOpen) {
         setUserName('');
         setError('');
-        setDate(new Date());
+        setDateRange(createDefaultRange());
     }
     onOpenChange(isOpen);
   }
@@ -86,7 +121,7 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Re
         <DialogHeader>
           <DialogTitle>Book Seat {seat.label}</DialogTitle>
           <DialogDescription>
-            Select the date and enter your name to confirm the booking.
+            Select the date range and enter your name to confirm the booking.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -102,14 +137,17 @@ export function BookingDialog({ seat, open, onOpenChange, onBookingSuccess }: Re
             />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Label>Date</Label>
+            <Label>Date range</Label>
             <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => d && setDate(d)}
+              mode="range"
+              selected={dateRange}
+              onSelect={(range) => range && setDateRange(range)}
               disabled={(day) => day < new Date(new Date().setHours(0,0,0,0))}
               numberOfMonths={1}
             />
+            <div className="text-xs text-muted-foreground">
+              {dayCount > 0 ? `${dayCount} ${dayCount === 1 ? 'day selected' : 'days selected'}` : 'Select at least one date'}
+            </div>
           </div>
         </div>
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}

@@ -305,6 +305,7 @@ export default function HomePage() {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onBookingSuccess={handleBookingSuccess}
+        initialDate={selectedDate}
       />
 
       <EditSeatDialog
