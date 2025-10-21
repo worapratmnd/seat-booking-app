@@ -1,6 +1,7 @@
 // app/admin/page.tsx
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, FC } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -164,7 +165,44 @@ export default function AdminPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-3xl font-bold">Admin Panel</h1>
+      <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
+        <CardContent className="p-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="space-y-2">
+              <p className="uppercase tracking-widest text-xs text-slate-300">
+                Seat Booking Admin
+              </p>
+              <h1 className="text-3xl md:text-4xl font-semibold">
+                Control your venue from a single hub
+              </h1>
+              <p className="text-slate-200 max-w-2xl">
+                Update seating layouts, keep seat labels tidy, and jump straight
+                into booking insights with the dashboard. Everything you need is
+                right here.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 md:items-end">
+              <Card className="bg-slate-900/60 text-left shadow-lg">
+                <CardContent className="p-4 space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Current seat count
+                  </p>
+                  <p className="text-3xl font-semibold">
+                    {seats.length.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Refresh layout to apply structural changes.
+                  </p>
+                </CardContent>
+              </Card>
+              <Button size="lg" asChild className="bg-white text-slate-900 hover:bg-slate-200">
+                <Link href="/admin/dashboard">Go to dashboard</Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid md:grid-cols-2 gap-8">
         {/* Card 1: สำหรับสร้าง Layout */}
         <Card>
@@ -214,34 +252,42 @@ export default function AdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Label</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {seats.map((seat) => (
-                  <TableRow key={seat.id}>
-                    <TableCell className="font-medium">{seat.label}</TableCell>
-                    <TableCell>
-                      Row {seat.row}, Col {seat.col}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(seat)}
-                      >
-                        Edit Label
-                      </Button>
-                    </TableCell>
+            {seats.length ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Label</TableHead>
+                    <TableHead>Position</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {seats.map((seat) => (
+                    <TableRow key={seat.id}>
+                      <TableCell className="font-medium">{seat.label}</TableCell>
+                      <TableCell>
+                        Row {seat.row}, Col {seat.col}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(seat)}
+                        >
+                          Edit Label
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center text-sm text-muted-foreground">
+                <p>No seats found yet.</p>
+                <p>Generate a layout to start managing seat labels.</p>
+                <Button onClick={handleUpdateLayout}>Create default layout</Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
